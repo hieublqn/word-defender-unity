@@ -17,7 +17,9 @@ public class EnemySpawner : MonoBehaviour
     [Header("Trạng thái (chỉ để xem)")]
     public int currentWave = 0;        // Đợt hiện tại
 
-    void Start()
+    // [SỬA] Không tự chạy khi vào game nữa, mà chờ người chơi chọn chủ đề ở menu.
+    // GameUI sẽ gọi hàm này sau khi người chơi nhấn 1, 2 hoặc 3.
+    public void StartGame()
     {
         // Bắt đầu chuỗi các đợt quái.
         // Coroutine = hàm có thể "tạm dừng" (chờ vài giây) rồi chạy tiếp mà không làm đơ game.

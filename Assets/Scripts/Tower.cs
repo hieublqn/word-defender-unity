@@ -19,6 +19,25 @@ public class Tower : MonoBehaviour
     {
         Instance = this;
         hearts = maxHearts;
+        SetupVisual(); // [MỚI - ĐỒ HỌA]
+    }
+
+    // [MỚI - ĐỒ HỌA] Thay hình chữ nhật xanh bằng hình Tháp Tri Thức pixel art
+    private void SetupVisual()
+    {
+        Sprite towerSprite = Effects.LoadSprite("Tower");
+        if (towerSprite == null) return;
+
+        SpriteRenderer sr = GetComponent<SpriteRenderer>();
+        sr.sprite = towerSprite;
+        sr.color = Color.white;   // Bỏ màu xanh cũ, giữ đúng màu gốc của ảnh
+        sr.sortingOrder = 1;
+
+        transform.localScale = Vector3.one * Effects.ScaleFor(towerSprite);
+
+        // Đặt chân tháp sát mép dưới màn hình (camera nhìn thấy từ y = -5 đến y = 5)
+        float height = sr.bounds.size.y;
+        transform.position = new Vector3(0f, -5f + height / 2f, 0f);
     }
 
     // Quái gọi hàm này khi chạm vào Tháp

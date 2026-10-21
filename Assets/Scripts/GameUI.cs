@@ -23,10 +23,17 @@ public class GameUI : MonoBehaviour
     private TMP_Text waveBanner;
     private GameObject gameOverPanel;
     private TMP_Text gameOverText;
+    private GameObject menuPanel;      // [MỚI] Màn hình menu chọn chủ đề
+    private TMP_Text topicText;        // [MỚI] Dòng hiện chủ đề đang chơi
 
     private int lastWave = 0;          // Đợt đã hiển thị gần nhất (để biết khi nào sang đợt mới)
     private float bannerTimer = 0f;    // Thời gian còn lại để hiện chữ "WAVE ..."
     private bool isGameOver = false;
+    private bool inMenu = false;       // [MỚI] Đang ở menu hay không
+
+    // [MỚI] "static" nên giữ được giá trị khi tải lại màn chơi.
+    // true = lần tải tiếp theo bỏ qua menu, vào chơi luôn với chủ đề cũ.
+    private static bool skipMenu = false;
 
     void Start()
     {
@@ -36,15 +43,57 @@ public class GameUI : MonoBehaviour
         spawner = FindFirstObjectByType<EnemySpawner>();
 
         BuildUI();
+        Effects.CreateBackground(); // [MỚI - ĐỒ HỌA] Nền trời đêm
+
+        // [MỚI] Chơi lại cùng chủ đề -> vào game luôn; ngược lại -> hiện menu
+        if (skipMenu)
+        {
+            skipMenu = false;
+            BeginGame();
+        }
+        else
+        {
+            inMenu = true;
+            menuPanel.SetActive(true);
+        }
+    }
+
+    // [MỚI] Bắt đầu chơi: ẩn menu, ghi tên chủ đề, cho Spawner sinh quái
+    private void BeginGame()
+    {
+        inMenu = false;
+        menuPanel.SetActive(false);
+        topicText.text = "Chủ đề: " + WordBank.TopicName(WordBank.currentTopic);
+        spawner.StartGame();
     }
 
     void Update()
     {
+        // ===== [MỚI] 0. Đang ở menu: chờ người chơi nhấn 1, 2 hoặc 3 =====
+        if (inMenu)
+        {
+            Keyboard kb = Keyboard.current;
+            if (kb == null) return;
+
+            if (kb.digit1Key.wasPressedThisFrame || kb.numpad1Key.wasPressedThisFrame)
+            { WordBank.currentTopic = Topic.TOEIC; BeginGame(); }
+            else if (kb.digit2Key.wasPressedThisFrame || kb.numpad2Key.wasPressedThisFrame)
+            { WordBank.currentTopic = Topic.IT; BeginGame(); }
+            else if (kb.digit3Key.wasPressedThisFrame || kb.numpad3Key.wasPressedThisFrame)
+            { WordBank.currentTopic = Topic.Travel; BeginGame(); }
+
+            return; // Đang ở menu thì không cập nhật phần còn lại
+        }
+
         // ===== 1. Cập nhật tim, điểm, combo mỗi khung hình =====
         heartsText.text = "Tim: " + tower.hearts + " / " + tower.maxHearts;
 
         string comboInfo = typing.combo >= 5 ? "  (x2 điểm!)" : "";
         scoreText.text = "Điểm: " + typing.score + "\nCombo: " + typing.combo + comboInfo;
+
+        // [MỚI] Vừa gõ sai (trong 0,6 giây) -> ô Điểm/Combo nháy đỏ
+        bool justWrong = Time.time - typing.lastWrongTime < 0.6f;
+        scoreText.color = justWrong ? new Color(1f, 0.3f, 0.3f) : Color.white;
 
         // ===== 2. Hiện chữ "WAVE n" khi sang đợt mới =====
         if (spawner.currentWave != lastWave)
@@ -66,12 +115,28 @@ public class GameUI : MonoBehaviour
             ShowGameOver();
         }
 
-        // Đang ở màn Game Over -> nhấn Enter để chơi lại
-        if (isGameOver && Keyboard.current != null && Keyboard.current.enterKey.wasPressedThisFrame)
+        // [SỬA] Đang ở màn Game Over:
+        //   Enter -> chơi lại CÙNG chủ đề;   M -> về menu chọn chủ đề khác
+        if (isGameOver && Keyboard.current != null)
         {
-            Time.timeScale = 1f; // Cho thời gian chạy lại bình thường
-            SceneManager.LoadScene(SceneManager.GetActiveScene().name); // Tải lại màn chơi từ đầu
+            if (Keyboard.current.enterKey.wasPressedThisFrame)
+            {
+                skipMenu = true;
+                RestartScene();
+            }
+            else if (Keyboard.current.mKey.wasPressedThisFrame)
+            {
+                skipMenu = false;
+                RestartScene();
+            }
         }
+    }
+
+    // [MỚI] Tải lại màn chơi từ đầu
+    private void RestartScene()
+    {
+        Time.timeScale = 1f; // Cho thời gian chạy lại bình thường
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
     private void ShowGameOver()
@@ -85,7 +150,7 @@ public class GameUI : MonoBehaviour
         {
             text += "• " + w + "\n";
         }
-        text += "\n<size=36>Nhấn ENTER để chơi lại</size>";
+        text += "\n<size=36>ENTER: chơi lại chủ đề này     M: về menu chọn chủ đề</size>"; // [SỬA]
 
         gameOverText.text = text;
         gameOverPanel.SetActive(true);
@@ -121,20 +186,45 @@ public class GameUI : MonoBehaviour
         waveBanner.color = new Color(1f, 0.84f, 0f); // Vàng
         waveBanner.gameObject.SetActive(false);
 
-        // Màn hình Game Over: 1 tấm nền tối phủ kín màn hình + 1 ô chữ
-        gameOverPanel = new GameObject("GameOverPanel");
-        gameOverPanel.transform.SetParent(canvasObj.transform, false);
-        Image bg = gameOverPanel.AddComponent<Image>();
-        bg.color = new Color(0f, 0f, 0f, 0.85f); // Đen, hơi trong suốt
-        RectTransform bgRect = gameOverPanel.GetComponent<RectTransform>();
-        bgRect.anchorMin = Vector2.zero;   // Kéo giãn phủ kín
-        bgRect.anchorMax = Vector2.one;
-        bgRect.offsetMin = Vector2.zero;
-        bgRect.offsetMax = Vector2.zero;
+        // [MỚI] Dưới góc tim: tên chủ đề đang chơi
+        topicText = CreateText(canvasObj.transform, "Topic", new Vector2(0, 1), new Vector2(40, -90),
+                               new Vector2(700, 60), 34, TextAlignmentOptions.TopLeft);
+        topicText.color = new Color(0.7f, 0.9f, 1f);
 
+        // Màn hình Game Over: 1 tấm nền tối phủ kín màn hình + 1 ô chữ
+        gameOverPanel = CreatePanel(canvasObj.transform, "GameOverPanel", new Color(0f, 0f, 0f, 0.85f));
         gameOverText = CreateText(gameOverPanel.transform, "GameOverText", new Vector2(0.5f, 0.5f), Vector2.zero,
                                   new Vector2(1400, 900), 44, TextAlignmentOptions.Center);
         gameOverPanel.SetActive(false);
+
+        // [MỚI] Màn hình Menu chọn chủ đề (nền xanh đậm, che kín màn hình)
+        menuPanel = CreatePanel(canvasObj.transform, "MenuPanel", new Color(0.05f, 0.08f, 0.2f, 1f));
+        TMP_Text menuText = CreateText(menuPanel.transform, "MenuText", new Vector2(0.5f, 0.5f), Vector2.zero,
+                                       new Vector2(1400, 900), 48, TextAlignmentOptions.Center);
+        menuText.text =
+            "<size=120><color=#FFD700>WORD DEFENDER</color></size>\n" +
+            "<size=40>Bảo vệ Tháp Tri Thức bằng bàn phím!</size>\n\n\n" +
+            "Chọn chủ đề từ vựng:\n\n" +
+            "<color=#FFD700>[1]</color>  TOEIC - Công việc & văn phòng\n" +
+            "<color=#FFD700>[2]</color>  Công nghệ thông tin\n" +
+            "<color=#FFD700>[3]</color>  Du lịch\n\n\n" +
+            "<size=36>Nhấn phím 1, 2 hoặc 3 để bắt đầu</size>";
+        menuPanel.SetActive(false);
+    }
+
+    // [MỚI] Hàm phụ: tạo 1 tấm nền phủ kín màn hình (dùng cho Menu và Game Over)
+    private GameObject CreatePanel(Transform parent, string name, Color color)
+    {
+        GameObject panel = new GameObject(name);
+        panel.transform.SetParent(parent, false);
+        Image bg = panel.AddComponent<Image>();
+        bg.color = color;
+        RectTransform rect = panel.GetComponent<RectTransform>();
+        rect.anchorMin = Vector2.zero;   // Kéo giãn phủ kín
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+        return panel;
     }
 
     // Hàm phụ: tạo 1 ô chữ TextMeshPro trên UI

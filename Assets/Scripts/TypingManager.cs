@@ -33,6 +33,9 @@ public class TypingManager : MonoBehaviour
             if (target != null) target.ResetTyping();
             target = null;
         }
+
+        // [MỚI - CHỈ ĐỊNH MỤC TIÊU] Báo cho các quái biết con nào đang bị khóa (để hiện khung ngắm)
+        Enemy.CurrentTarget = target;
     }
 
     // Được gọi mỗi khi người chơi gõ 1 ký tự
@@ -70,7 +73,7 @@ public class TypingManager : MonoBehaviour
             score += points;
             Debug.Log("+" + points + " điểm | Tổng: " + score + " | Combo: " + combo);
 
-            target.Die();
+            target.Die(points); // [SỬA] truyền điểm để hiện chữ "+điểm" bay lên
             target = null;
         }
     }
@@ -95,10 +98,33 @@ public class TypingManager : MonoBehaviour
         return best;
     }
 
-    // Gõ sai: mất combo (không bị trừ tim)
+    // [MỚI] Thời điểm gõ sai gần nhất (GameUI dùng để nháy đỏ ô Combo)
+    [HideInInspector] public float lastWrongTime = -10f;
+
+    // [SỬA] Gõ sai: mất combo (không bị trừ tim) + báo hiệu rõ ràng cho người chơi
     private void WrongKey(char c)
     {
+        int lostCombo = combo;
         combo = 0;
+        lastWrongTime = Time.time;
         Debug.Log("Gõ sai chữ '" + c + "' - mất combo!");
+
+        Color red = new Color(1f, 0.3f, 0.3f);
+
+        if (target != null)
+        {
+            // Đang khóa 1 con: con đó rung + chữ đỏ, thông báo hiện ngay trên đầu nó
+            target.FlashWrong();
+            string msg = lostCombo >= 2 ? "Mất combo x" + lostCombo + "!" : "Sai chữ!";
+            Effects.SpawnFloatingText(target.transform.position + Vector3.up * 1.6f, msg, red);
+        }
+        else
+        {
+            // Chưa khóa con nào và không có từ nào bắt đầu bằng chữ này: báo phía trên Tháp
+            Vector3 pos = Tower.Instance != null ? Tower.Instance.transform.position + Vector3.up * 2.5f : Vector3.zero;
+            string msg = "Không có từ bắt đầu bằng '" + char.ToUpper(c) + "'";
+            if (lostCombo >= 2) msg += "\nMất combo x" + lostCombo + "!";
+            Effects.SpawnFloatingText(pos, msg, red);
+        }
     }
 }
