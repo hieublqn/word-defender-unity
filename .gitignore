@@ -1,0 +1,40 @@
+# ===== .gitignore cho project Unity =====
+# Các thư mục dưới đây do Unity TỰ TẠO LẠI khi mở project,
+# rất nặng (hàng GB), nên KHÔNG đưa lên GitHub.
+
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+/[Rr]ecordings/
+
+# File do Visual Studio / VS Code tự sinh
+.vs/
+*.csproj
+*.unityproj
+*.sln
+*.slnx
+*.suo
+*.user
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# File tạm của hệ điều hành
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# File build ra (khi xuất game .exe)
+*.apk
+*.aab
+*.unitypackage
+crashlytics-build.properties
