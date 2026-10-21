@@ -63,8 +63,31 @@ public class GameUI : MonoBehaviour
     {
         inMenu = false;
         menuPanel.SetActive(false);
-        topicText.text = "Chủ đề: " + WordBank.TopicName(WordBank.currentTopic);
+        topicText.text = "Chủ đề: " + WordBank.TopicName(WordBank.currentTopic)
+                       + "   |   Kỷ lục: " + GetHighScore(WordBank.currentTopic); // [MỚI] hiện kỷ lục
         spawner.StartGame();
+    }
+
+    // ===== [MỚI - KỶ LỤC] Đọc / ghi điểm cao nhất =====
+    // PlayerPrefs = "cuốn sổ nhỏ" Unity lưu trên máy, tắt game mở lại vẫn còn.
+    // Mỗi chủ đề có 1 "khóa" (key) riêng, ví dụ "HighScore_TOEIC", "HighScore_IT"...
+    private static string HighScoreKey(Topic topic)
+    {
+        return "HighScore_" + topic;
+    }
+
+    private static int GetHighScore(Topic topic)
+    {
+        return PlayerPrefs.GetInt(HighScoreKey(topic), 0); // Chưa có thì trả về 0
+    }
+
+    // Trả về true nếu điểm lần này phá kỷ lục cũ (và lưu luôn kỷ lục mới)
+    private static bool TrySaveHighScore(Topic topic, int score)
+    {
+        if (score <= GetHighScore(topic)) return false;
+        PlayerPrefs.SetInt(HighScoreKey(topic), score);
+        PlayerPrefs.Save(); // Ghi xuống ổ đĩa ngay
+        return true;
     }
 
     void Update()
@@ -143,8 +166,16 @@ public class GameUI : MonoBehaviour
     {
         isGameOver = true;
 
+        // [MỚI - KỶ LỤC] Kiểm tra phá kỷ lục trước khi hiện màn hình
+        Topic topic = WordBank.currentTopic;
+        bool newRecord = TrySaveHighScore(topic, typing.score);
+
         string text = "<size=90><color=#FF5555>GAME OVER</color></size>\n\n";
-        text += "Điểm: " + typing.score + "     Đạt tới: Wave " + spawner.currentWave + "\n\n";
+        text += "Điểm: " + typing.score + "     Đạt tới: Wave " + spawner.currentWave + "\n";
+        if (newRecord)
+            text += "<size=56><color=#FFD700>KỶ LỤC MỚI!</color></size>\n\n";
+        else
+            text += "Kỷ lục (" + WordBank.TopicName(topic) + "): " + GetHighScore(topic) + "\n\n";
         text += "<color=#FFD700>Những từ bạn cần ôn lại:</color>\n";
         foreach (string w in tower.missedWords)
         {
@@ -205,9 +236,10 @@ public class GameUI : MonoBehaviour
             "<size=120><color=#FFD700>WORD DEFENDER</color></size>\n" +
             "<size=40>Bảo vệ Tháp Tri Thức bằng bàn phím!</size>\n\n\n" +
             "Chọn chủ đề từ vựng:\n\n" +
-            "<color=#FFD700>[1]</color>  TOEIC - Công việc & văn phòng\n" +
-            "<color=#FFD700>[2]</color>  Công nghệ thông tin\n" +
-            "<color=#FFD700>[3]</color>  Du lịch\n\n\n" +
+            // [SỬA] Thêm kỷ lục của từng chủ đề vào cuối mỗi dòng
+            "<color=#FFD700>[1]</color>  TOEIC - Công việc & văn phòng   <size=34><color=#AAAAAA>Kỷ lục: " + GetHighScore(Topic.TOEIC) + "</color></size>\n" +
+            "<color=#FFD700>[2]</color>  Công nghệ thông tin   <size=34><color=#AAAAAA>Kỷ lục: " + GetHighScore(Topic.IT) + "</color></size>\n" +
+            "<color=#FFD700>[3]</color>  Du lịch   <size=34><color=#AAAAAA>Kỷ lục: " + GetHighScore(Topic.Travel) + "</color></size>\n\n\n" +
             "<size=36>Nhấn phím 1, 2 hoặc 3 để bắt đầu</size>";
         menuPanel.SetActive(false);
     }
