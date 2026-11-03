@@ -85,6 +85,7 @@ public static class Effects
         obj.transform.position = position;
 
         TextMeshPro tmp = obj.AddComponent<TextMeshPro>();
+        GameFonts.Apply(tmp); // [MỚI - FONT] Be Vietnam Pro
         tmp.text = message;
         tmp.fontSize = 5;
         tmp.fontStyle = FontStyles.Bold;

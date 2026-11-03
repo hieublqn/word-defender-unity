@@ -36,6 +36,10 @@ public class Enemy : MonoBehaviour
     private float wrongTimer = 0f;   // > 0 nghĩa là vừa gõ sai: chữ đỏ + quái rung
     private float labelAlpha = 1f;   // Độ đậm của chữ: 1 = rõ, 0.45 = mờ (khi đang nhắm con khác)
 
+    // [MỚI - QUÁI VÀNG]
+    [HideInInspector] public bool isGolden = false; // true = quái vàng, diệt nó thì nổ cả màn hình
+    private SpriteRenderer bodyRenderer;            // Để đổi hình sang con ma vàng
+
     // [MỚI] Khi quái xuất hiện -> thêm vào danh sách; khi biến mất -> xóa khỏi danh sách
     void OnEnable()  { All.Add(this); }
     void OnDisable() { All.Remove(this); }
@@ -76,6 +80,7 @@ public class Enemy : MonoBehaviour
         SpriteRenderer sr = bodyObj.AddComponent<SpriteRenderer>();
         sr.sprite = ghost;
         sr.sortingOrder = 5;
+        bodyRenderer = sr; // [MỚI - QUÁI VÀNG] nhớ lại để đổi hình sau
 
         bobOffset = Random.Range(0f, 10f);
 
@@ -96,6 +101,8 @@ public class Enemy : MonoBehaviour
         // Viền đen quanh chữ cho dễ đọc trên nền trời đêm, và vẽ chữ nằm TRÊN hình con ma
         if (wordLabel != null)
         {
+            GameFonts.Apply(wordLabel);                              // [MỚI - FONT] Be Vietnam Pro (phải gán TRƯỚC khi đặt viền)
+            wordLabel.textWrappingMode = TextWrappingModes.NoWrap;   // [MỚI] Từ dài không bị xuống dòng
             wordLabel.outlineWidth = 0.25f;
             wordLabel.outlineColor = new Color32(0, 0, 0, 255);
             wordLabel.GetComponent<Renderer>().sortingOrder = 10;
@@ -147,6 +154,7 @@ public class Enemy : MonoBehaviour
                 Tower.Instance.TakeDamage(word, meaning);
             }
             Effects.SpawnExplosion(transform.position, new Color(1f, 0.3f, 0.3f)); // [MỚI] Nổ đỏ khi chạm Tháp
+            SoundManager.Play("hit"); // [MỚI - ÂM THANH]
             Destroy(gameObject);
         }
     }
@@ -186,14 +194,23 @@ public class Enemy : MonoBehaviour
     {
         Debug.Log("Tiêu diệt quái '" + word + "' (" + meaning + ")");
 
-        // [MỚI - ĐỒ HỌA] Nổ hạt sáng vàng + chữ điểm bay lên
-        Effects.SpawnExplosion(transform.position, new Color(1f, 0.9f, 0.5f));
+        // [MỚI - ĐỒ HỌA] Nổ hạt sáng vàng + chữ điểm bay lên (quái vàng nổ to gấp đôi)
+        Effects.SpawnExplosion(transform.position, new Color(1f, 0.9f, 0.5f), isGolden ? 24 : 12);
+        SoundManager.Play("explode", 0.6f); // [MỚI - ÂM THANH]
         if (points > 0)
         {
             Effects.SpawnFloatingText(transform.position + Vector3.up * 0.5f, "+" + points, new Color(1f, 0.84f, 0f));
         }
 
         Destroy(gameObject);
+    }
+
+    // [MỚI - QUÁI VÀNG] EnemySpawner gọi hàm này để biến 1 con quái thường thành quái vàng
+    public void SetGolden()
+    {
+        isGolden = true;
+        Sprite gold = Effects.LoadSprite("GhostGold");
+        if (gold != null && bodyRenderer != null) bodyRenderer.sprite = gold;
     }
 
     // [MỚI - CHỈ ĐỊNH MỤC TIÊU] Gọi khi người chơi gõ sai chữ của con quái đang khóa

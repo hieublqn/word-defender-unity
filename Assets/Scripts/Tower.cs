@@ -51,6 +51,8 @@ public class Tower : MonoBehaviour
         {
             Debug.Log("GAME OVER! Các từ cần ôn lại: " + string.Join(", ", missedWords));
             Time.timeScale = 0f; // Dừng toàn bộ chuyển động trong game
+            SoundManager.StopMusic();      // [MỚI - ÂM THANH]
+            SoundManager.Play("gameover");
         }
     }
 }

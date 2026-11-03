@@ -66,6 +66,7 @@ public class GameUI : MonoBehaviour
         topicText.text = "Chủ đề: " + WordBank.TopicName(WordBank.currentTopic)
                        + "   |   Kỷ lục: " + GetHighScore(WordBank.currentTopic); // [MỚI] hiện kỷ lục
         spawner.StartGame();
+        SoundManager.PlayMusic(); // [MỚI - ÂM THANH] Bật nhạc nền
     }
 
     // ===== [MỚI - KỶ LỤC] Đọc / ghi điểm cao nhất =====
@@ -124,6 +125,7 @@ public class GameUI : MonoBehaviour
             lastWave = spawner.currentWave;
             waveBanner.text = "WAVE " + lastWave;
             bannerTimer = 2f; // Hiện trong 2 giây
+            SoundManager.Play("wave"); // [MỚI - ÂM THANH]
         }
         if (bannerTimer > 0f)
         {
@@ -170,7 +172,7 @@ public class GameUI : MonoBehaviour
         Topic topic = WordBank.currentTopic;
         bool newRecord = TrySaveHighScore(topic, typing.score);
 
-        string text = "<size=90><color=#FF5555>GAME OVER</color></size>\n\n";
+        string text = ""; // [SỬA - FONT] Chữ "GAME OVER" đã tách sang ô tiêu đề riêng
         text += "Điểm: " + typing.score + "     Đạt tới: Wave " + spawner.currentWave + "\n";
         if (newRecord)
             text += "<size=56><color=#FFD700>KỶ LỤC MỚI!</color></size>\n\n";
@@ -215,6 +217,7 @@ public class GameUI : MonoBehaviour
         waveBanner = CreateText(canvasObj.transform, "WaveBanner", new Vector2(0.5f, 0.5f), new Vector2(0, 100),
                                 new Vector2(1000, 200), 120, TextAlignmentOptions.Center);
         waveBanner.color = new Color(1f, 0.84f, 0f); // Vàng
+        GameFonts.Apply(waveBanner, true);            // [MỚI - FONT] Tiêu đề dùng Bungee
         waveBanner.gameObject.SetActive(false);
 
         // [MỚI] Dưới góc tim: tên chủ đề đang chơi
@@ -224,16 +227,28 @@ public class GameUI : MonoBehaviour
 
         // Màn hình Game Over: 1 tấm nền tối phủ kín màn hình + 1 ô chữ
         gameOverPanel = CreatePanel(canvasObj.transform, "GameOverPanel", new Color(0f, 0f, 0f, 0.85f));
-        gameOverText = CreateText(gameOverPanel.transform, "GameOverText", new Vector2(0.5f, 0.5f), Vector2.zero,
-                                  new Vector2(1400, 900), 44, TextAlignmentOptions.Center);
+        // [SỬA - FONT] Tách chữ "GAME OVER" thành ô riêng để dùng font tiêu đề Bungee
+        TMP_Text gameOverTitle = CreateText(gameOverPanel.transform, "GameOverTitle", new Vector2(0.5f, 0.5f), new Vector2(0, 360),
+                                            new Vector2(1400, 160), 110, TextAlignmentOptions.Center);
+        GameFonts.Apply(gameOverTitle, true);
+        gameOverTitle.color = new Color(1f, 0.33f, 0.33f);
+        gameOverTitle.text = "GAME OVER";
+        gameOverText = CreateText(gameOverPanel.transform, "GameOverText", new Vector2(0.5f, 0.5f), new Vector2(0, -60),
+                                  new Vector2(1400, 800), 44, TextAlignmentOptions.Center);
         gameOverPanel.SetActive(false);
 
         // [MỚI] Màn hình Menu chọn chủ đề (nền xanh đậm, che kín màn hình)
         menuPanel = CreatePanel(canvasObj.transform, "MenuPanel", new Color(0.05f, 0.08f, 0.2f, 1f));
-        TMP_Text menuText = CreateText(menuPanel.transform, "MenuText", new Vector2(0.5f, 0.5f), Vector2.zero,
-                                       new Vector2(1400, 900), 48, TextAlignmentOptions.Center);
+        // [SỬA - FONT] Tách tên game thành ô riêng để dùng font tiêu đề Bungee
+        TMP_Text menuTitle = CreateText(menuPanel.transform, "MenuTitle", new Vector2(0.5f, 0.5f), new Vector2(0, 330),
+                                        new Vector2(1600, 180), 130, TextAlignmentOptions.Center);
+        GameFonts.Apply(menuTitle, true);
+        menuTitle.color = new Color(1f, 0.84f, 0f);
+        menuTitle.text = "WORD DEFENDER";
+
+        TMP_Text menuText = CreateText(menuPanel.transform, "MenuText", new Vector2(0.5f, 0.5f), new Vector2(0, -80),
+                                       new Vector2(1400, 700), 48, TextAlignmentOptions.Center);
         menuText.text =
-            "<size=120><color=#FFD700>WORD DEFENDER</color></size>\n" +
             "<size=40>Bảo vệ Tháp Tri Thức bằng bàn phím!</size>\n\n\n" +
             "Chọn chủ đề từ vựng:\n\n" +
             // [SỬA] Thêm kỷ lục của từng chủ đề vào cuối mỗi dòng
@@ -268,6 +283,7 @@ public class GameUI : MonoBehaviour
         obj.transform.SetParent(parent, false);
 
         TextMeshProUGUI text = obj.AddComponent<TextMeshProUGUI>();
+        GameFonts.Apply(text); // [MỚI - FONT] Be Vietnam Pro cho mọi chữ giao diện
         text.fontSize = fontSize;
         text.alignment = alignment;
         text.color = Color.white;

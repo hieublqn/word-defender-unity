@@ -76,6 +76,21 @@ public class EnemySpawner : MonoBehaviour
         enemy.word = pair[0];
         enemy.meaning = pair[1];
         enemy.speed = speed;
+
+        // [MỚI - QUÁI VÀNG] Từ wave 2 trở đi, khoảng 1/8 số quái là quái vàng,
+        // nhưng mỗi lúc chỉ có tối đa 1 con trên màn hình (để không quá dễ)
+        if (currentWave >= 2 && Random.value < 0.12f && !GoldenOnScreen())
+        {
+            enemy.SetGolden();
+        }
+    }
+
+    // [MỚI - QUÁI VÀNG] Kiểm tra trên màn hình đã có quái vàng chưa
+    private bool GoldenOnScreen()
+    {
+        foreach (Enemy e in Enemy.All)
+            if (e.isGolden) return true;
+        return false;
     }
 
     // Độ dài từ theo từng đợt

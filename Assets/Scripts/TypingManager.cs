@@ -1,3 +1,4 @@
+using System.Collections.Generic; // [MỚI] để dùng List
 using UnityEngine;
 using UnityEngine.InputSystem; // Hệ thống nhập liệu mới của Unity (đọc bàn phím)
 
@@ -63,6 +64,7 @@ public class TypingManager : MonoBehaviour
 
         // Gõ đúng -> tô vàng thêm 1 chữ
         target.TypeLetter();
+        SoundManager.Play("type"); // [MỚI - ÂM THANH]
 
         // Gõ xong cả từ -> tiêu diệt quái, cộng điểm
         if (target.IsComplete())
@@ -73,8 +75,37 @@ public class TypingManager : MonoBehaviour
             score += points;
             Debug.Log("+" + points + " điểm | Tổng: " + score + " | Combo: " + combo);
 
+            bool wasGolden = target.isGolden; // [MỚI - QUÁI VÀNG] nhớ lại trước khi quái bị xóa
             target.Die(points); // [SỬA] truyền điểm để hiện chữ "+điểm" bay lên
+
+            if (wasGolden) ClearScreen(target); // [MỚI - QUÁI VÀNG]
             target = null;
+        }
+    }
+
+    // [MỚI - QUÁI VÀNG] Nổ toàn bộ quái còn lại trên màn hình, mỗi con vẫn được cộng điểm
+    private void ClearScreen(Enemy golden)
+    {
+        // Sao chép danh sách ra list mới rồi mới duyệt,
+        // tránh lỗi "sửa danh sách trong lúc đang duyệt" khi quái bị xóa
+        List<Enemy> others = new List<Enemy>(Enemy.All);
+        int killed = 0;
+
+        foreach (Enemy e in others)
+        {
+            if (e == golden) continue;
+            int pts = e.word.Length * 10;
+            score += pts;
+            e.Die(pts);
+            killed++;
+        }
+
+        Debug.Log("QUÁI VÀNG! Nổ " + killed + " quái.");
+        SoundManager.Play("golden"); // [MỚI - ÂM THANH]
+        if (killed > 0 && Tower.Instance != null)
+        {
+            Effects.SpawnFloatingText(Tower.Instance.transform.position + Vector3.up * 3f,
+                                      "BÙM! Diệt " + killed + " quái!", new Color(1f, 0.84f, 0f));
         }
     }
 
@@ -108,6 +139,7 @@ public class TypingManager : MonoBehaviour
         combo = 0;
         lastWrongTime = Time.time;
         Debug.Log("Gõ sai chữ '" + c + "' - mất combo!");
+        SoundManager.Play("wrong"); // [MỚI - ÂM THANH]
 
         Color red = new Color(1f, 0.3f, 0.3f);
 
